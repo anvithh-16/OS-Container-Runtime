@@ -85,53 +85,54 @@ sudo rmmod monitor
 
 ## Screenshots
 
-### Screenshot 1 — Two containers running under one supervisor
+### Screenshot 1 — Two containers running under one supervisor & `./engine ps` showing full metadata
 
 > `./engine ps` output showing both `alpha` and `beta` containers with `running` state under a single supervisor process.
-
-*(Insert screenshot here)*
-
-### Screenshot 2 — `./engine ps` showing full metadata
-
 > Output showing container ID, host PID, state, soft limit (MB), and hard limit (MB) for all containers.
 
-*(Insert screenshot here)*
+<img width="1379" height="707" alt="Screenshot 2026-04-14 at 7 36 15 AM" src="https://github.com/user-attachments/assets/73ddefa4-3f3c-4397-8c10-f3a2d2777b8b" />
 
-### Screenshot 3 — Log file contents and producer/consumer activity
+
+### Screenshot 2 — Log file contents and producer/consumer activity
 
 > `./engine logs alpha` showing BusyBox output captured through the pipe → bounded buffer → log file pipeline.
 
-*(Insert screenshot here)*
+<img width="1393" height="628" alt="Screenshot 2026-04-14 at 7 36 37 AM" src="https://github.com/user-attachments/assets/24bafd70-c45b-4ecd-91f9-d3b63f18c94d" />
 
-### Screenshot 4 — CLI command issued and supervisor responding
+
+### Screenshot 3 — CLI command issued and supervisor responding
 
 > Terminal showing `./engine start alpha` being issued and the supervisor responding with `Started container 'alpha' pid=XXXX`.
 
-*(Insert screenshot here)*
+<img width="1310" height="79" alt="Screenshot 2026-04-14 at 7 49 58 AM" src="https://github.com/user-attachments/assets/9ff64f16-0921-43c5-a2b9-cd42a1a92860" />
 
-### Screenshot 5 — dmesg showing soft-limit warning
+
+### Screenshot 4 — dmesg showing soft-limit warning
 
 > `dmesg` output showing `[container_monitor] SOFT LIMIT container=... rss=... limit=...` when a container exceeds its soft memory limit.
 
-*(Insert screenshot here)*
+<img width="1396" height="581" alt="Screenshot 2026-04-14 at 7 51 32 AM" src="https://github.com/user-attachments/assets/2146359e-94c3-4c78-bb09-b4095f602e64" />
+
 
 ### Screenshot 6 — dmesg showing hard-limit kill
 
 > `dmesg` output showing `[container_monitor] HARD LIMIT container=... rss=... limit=...` and `ps` showing the container transitioning to `killed` state.
 
-*(Insert screenshot here)*
+<img width="1396" height="581" alt="Screenshot 2026-04-14 at 7 51 32 AM" src="https://github.com/user-attachments/assets/67aeb7a7-06db-4393-b131-aa33ae33f781" />
+
 
 ### Screenshot 7 — Scheduling experiment output
 
 > Terminal output from Experiment A (priority) and Experiment B (CPU vs I/O) with measurable timing differences.
 
-*(Insert screenshot here)*
+<img width="1215" height="671" alt="Screenshot 2026-04-14 at 7 52 42 AM" src="https://github.com/user-attachments/assets/563d64e7-1d02-4b16-a41b-aab964000271" />
 
 ### Screenshot 8 — No zombies after clean shutdown
 
 > `ps aux | grep Z` returning no zombie processes after all containers have been stopped and supervisor has shut down.
 
-*(Insert screenshot here)*
+<img width="1255" height="102" alt="Screenshot 2026-04-14 at 7 53 24 AM" src="https://github.com/user-attachments/assets/7a60cc69-7607-40a5-8550-13af76dbc565" />
+
 
 ---
 
