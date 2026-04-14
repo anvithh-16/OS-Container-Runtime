@@ -114,20 +114,20 @@ sudo rmmod monitor
 <img width="1396" height="581" alt="Screenshot 2026-04-14 at 7 51 32 AM" src="https://github.com/user-attachments/assets/2146359e-94c3-4c78-bb09-b4095f602e64" />
 
 
-### Screenshot 6 — dmesg showing hard-limit kill
+### Screenshot 5 — dmesg showing hard-limit kill
 
 > `dmesg` output showing `[container_monitor] HARD LIMIT container=... rss=... limit=...` and `ps` showing the container transitioning to `killed` state.
 
 <img width="1396" height="581" alt="Screenshot 2026-04-14 at 7 51 32 AM" src="https://github.com/user-attachments/assets/67aeb7a7-06db-4393-b131-aa33ae33f781" />
 
 
-### Screenshot 7 — Scheduling experiment output
+### Screenshot 6 — Scheduling experiment output
 
 > Terminal output from Experiment A (priority) and Experiment B (CPU vs I/O) with measurable timing differences.
 
 <img width="1215" height="671" alt="Screenshot 2026-04-14 at 7 52 42 AM" src="https://github.com/user-attachments/assets/563d64e7-1d02-4b16-a41b-aab964000271" />
 
-### Screenshot 8 — No zombies after clean shutdown
+### Screenshot 7 — No zombies after clean shutdown
 
 > `ps aux | grep Z` returning no zombie processes after all containers have been stopped and supervisor has shut down.
 
