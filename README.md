@@ -1,111 +1,222 @@
-# Multi-Container Runtime
+# OS Jackfruit — Supervised Multi-Container Runtime
 
-A lightweight Linux container runtime in C with a long-running supervisor and a kernel-space memory monitor.
+## Team Members
 
-Read [`project-guide.md`](project-guide.md) for the full project specification.
-
----
-
-## Getting Started
-
-### 1. Fork the Repository
-
-1. Go to [github.com/shivangjhalani/OS-Jackfruit](https://github.com/shivangjhalani/OS-Jackfruit)
-2. Click **Fork** (top-right)
-3. Clone your fork:
-
-```bash
-git clone https://github.com/<your-username>/OS-Jackfruit.git
-cd OS-Jackfruit
-```
-
-### 2. Set Up Your VM
-
-You need an **Ubuntu 22.04 or 24.04** VM with **Secure Boot OFF**. WSL will not work.
-
-Install dependencies:
-
-```bash
-sudo apt update
-sudo apt install -y build-essential linux-headers-$(uname -r)
-```
-
-### 3. Run the Environment Check
-
-```bash
-cd boilerplate
-chmod +x environment-check.sh
-sudo ./environment-check.sh
-```
-
-Fix any issues reported before moving on.
-
-### 4. Prepare the Root Filesystem
-
-```bash
-mkdir rootfs-base
-wget https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/x86_64/alpine-minirootfs-3.20.3-x86_64.tar.gz
-tar -xzf alpine-minirootfs-3.20.3-x86_64.tar.gz -C rootfs-base
-
-# Make one writable copy per container you plan to run
-cp -a ./rootfs-base ./rootfs-alpha
-cp -a ./rootfs-base ./rootfs-beta
-```
-
-Do not commit `rootfs-base/` or `rootfs-*` directories to your repository.
-
-### 5. Understand the Boilerplate
-
-The `boilerplate/` folder contains starter files:
-
-| File                   | Purpose                                             |
-| ---------------------- | --------------------------------------------------- |
-| `engine.c`             | User-space runtime and supervisor skeleton          |
-| `monitor.c`            | Kernel module skeleton                              |
-| `monitor_ioctl.h`      | Shared ioctl command definitions                    |
-| `Makefile`             | Build targets for both user-space and kernel module |
-| `cpu_hog.c`            | CPU-bound test workload                             |
-| `io_pulse.c`           | I/O-bound test workload                             |
-| `memory_hog.c`         | Memory-consuming test workload                      |
-| `environment-check.sh` | VM environment preflight check                      |
-
-Use these as your starting point. You are free to restructure the repository however you want — the submission requirements are listed in the project guide.
-
-### 6. Build and Verify
-
-```bash
-cd boilerplate
-make
-```
-
-If this compiles without errors, your environment is ready.
-
-### 7. GitHub Actions Smoke Check
-
-Your fork will inherit a minimal GitHub Actions workflow from this repository.
-
-That workflow only performs CI-safe checks:
-
-- `make -C boilerplate ci`
-- user-space binary compilation (`engine`, `memory_hog`, `cpu_hog`, `io_pulse`)
-- `./boilerplate/engine` with no arguments must print usage and exit with a non-zero status
-
-The CI-safe build command is:
-
-```bash
-make -C boilerplate ci
-```
-
-This smoke check does not test kernel-module loading, supervisor runtime behavior, or container execution.
+| Name | SRN |
+|------|-----|
+| Anvith Vegi | [Your SRN] |
+| [Partner Name] | [Partner SRN] |
 
 ---
 
-## What to Do Next
+## Build, Load, and Run Instructions
 
-Read [`project-guide.md`](project-guide.md) end to end. It contains:
+### Prerequisites
 
-- The six implementation tasks (multi-container runtime, CLI, logging, kernel monitor, scheduling experiments, cleanup)
-- The engineering analysis you must write
-- The exact submission requirements, including what your `README.md` must contain (screenshots, analysis, design decisions)
+- Ubuntu 24.04 (aarch64)
+- Kernel headers installed
+- Secure Boot off (or not enforced)
 
-Your fork's `README.md` should be replaced with your own project documentation as described in the submission package section of the project guide. (As in get rid of all the above content and replace with your README.md)
+### 1. Download Alpine Linux root filesystem (aarch64)
+
+```bash
+cd ~/OS-Container-Runtime
+mkdir rootfs
+wget https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/aarch64/alpine-minirootfs-3.20.3-aarch64.tar.gz
+sudo tar -xzf alpine-minirootfs-3.20.3-aarch64.tar.gz -C rootfs
+```
+
+### 2. Build everything
+
+```bash
+cd boilerplate
+sudo make
+```
+
+This produces: `engine` (user-space binary), `monitor.ko` (kernel module), and workload binaries (`cpu_hog`, `io_pulse`, `memory_hog`).
+
+### 3. Copy workloads into rootfs
+
+```bash
+sudo cp cpu_hog ../rootfs/
+sudo cp io_pulse ../rootfs/
+sudo cp memory_hog ../rootfs/
+```
+
+### 4. Load the kernel module
+
+```bash
+sudo insmod monitor.ko
+ls -l /dev/container_monitor   # should exist
+sudo dmesg | tail -5           # should show "Module loaded"
+```
+
+### 5. Start the supervisor (Terminal 1)
+
+```bash
+sudo ./engine supervisor ../rootfs
+```
+
+### 6. Issue CLI commands (Terminal 2)
+
+```bash
+sudo ./engine start alpha ../rootfs /bin/busybox
+sudo ./engine start beta  ../rootfs /bin/busybox
+sudo ./engine ps
+sudo ./engine logs alpha
+sudo ./engine stop alpha
+sudo ./engine stop beta
+```
+
+### 7. Verify clean shutdown
+
+```bash
+sudo dmesg | tail -20      # shows register/unregister events
+ps aux | grep Z            # should show no zombie processes
+```
+
+### 8. Unload the kernel module
+
+```bash
+sudo rmmod monitor
+```
+
+---
+
+## Screenshots
+
+### Screenshot 1 — Two containers running under one supervisor
+
+> `./engine ps` output showing both `alpha` and `beta` containers with `running` state under a single supervisor process.
+
+*(Insert screenshot here)*
+
+### Screenshot 2 — `./engine ps` showing full metadata
+
+> Output showing container ID, host PID, state, soft limit (MB), and hard limit (MB) for all containers.
+
+*(Insert screenshot here)*
+
+### Screenshot 3 — Log file contents and producer/consumer activity
+
+> `./engine logs alpha` showing BusyBox output captured through the pipe → bounded buffer → log file pipeline.
+
+*(Insert screenshot here)*
+
+### Screenshot 4 — CLI command issued and supervisor responding
+
+> Terminal showing `./engine start alpha` being issued and the supervisor responding with `Started container 'alpha' pid=XXXX`.
+
+*(Insert screenshot here)*
+
+### Screenshot 5 — dmesg showing soft-limit warning
+
+> `dmesg` output showing `[container_monitor] SOFT LIMIT container=... rss=... limit=...` when a container exceeds its soft memory limit.
+
+*(Insert screenshot here)*
+
+### Screenshot 6 — dmesg showing hard-limit kill
+
+> `dmesg` output showing `[container_monitor] HARD LIMIT container=... rss=... limit=...` and `ps` showing the container transitioning to `killed` state.
+
+*(Insert screenshot here)*
+
+### Screenshot 7 — Scheduling experiment output
+
+> Terminal output from Experiment A (priority) and Experiment B (CPU vs I/O) with measurable timing differences.
+
+*(Insert screenshot here)*
+
+### Screenshot 8 — No zombies after clean shutdown
+
+> `ps aux | grep Z` returning no zombie processes after all containers have been stopped and supervisor has shut down.
+
+*(Insert screenshot here)*
+
+---
+
+## Engineering Analysis
+
+### 1. Container Isolation
+
+Each container is launched using `clone()` with three namespace flags:
+
+- `CLONE_NEWPID` — gives the container its own PID namespace, so the first process inside sees itself as PID 1.
+- `CLONE_NEWUTS` — gives the container its own hostname, set to the container ID via `sethostname()`.
+- `CLONE_NEWNS` — gives the container its own mount namespace, preventing mount/unmount operations from affecting the host.
+
+After `clone()`, the child calls `chroot()` into the Alpine rootfs and mounts `/proc` so process utilities work correctly inside the container. This approach is simpler than `pivot_root` and sufficient for this project's isolation requirements.
+
+### 2. Supervisor Lifecycle
+
+The supervisor is a long-running process that:
+
+1. Opens a UNIX domain socket at `/tmp/mini_runtime.sock` and listens for CLI connections.
+2. Initializes the bounded buffer and spawns the logger (consumer) thread.
+3. Opens `/dev/container_monitor` to register containers with the kernel module.
+4. Enters a `select()`-based event loop, accepting one client connection at a time.
+5. On `SIGINT`/`SIGTERM`, sets a `should_stop` flag, stops all running containers, joins the logger thread, frees all memory, and exits cleanly.
+
+`SIGCHLD` is handled with `waitpid(WNOHANG)` in a loop to reap all exited children immediately, preventing zombie accumulation.
+
+### 3. IPC and Synchronization
+
+Two separate IPC channels are used:
+
+- **Control plane**: UNIX domain socket (`SOCK_STREAM`) between CLI client and supervisor. Each CLI invocation connects, sends a `control_request_t` struct, reads a `control_response_t`, and disconnects.
+- **Logging pipeline**: A `pipe()` per container. The container's `stdout`/`stderr` are redirected into the write end via `dup2()`. A producer thread reads from the read end and pushes chunks into the bounded circular buffer. The consumer (logger) thread pops chunks and writes them to per-container log files.
+
+**Why mutex + condvar over semaphores:**
+Semaphores only signal counts, not conditions. With a bounded buffer we need to express two distinct conditions: "buffer is not full" (producer waits) and "buffer is not empty" (consumer waits). Using `pthread_cond_t` with a single `pthread_mutex_t` makes both conditions explicit and readable. Semaphores would require two semaphores plus additional locking to protect the buffer indices, making the code more error-prone.
+
+**Race conditions without synchronization:**
+Without the mutex, a producer and consumer could simultaneously read and write `head`, `tail`, and `count`, corrupting the circular buffer state. Without `cond_wait`, both threads would busy-spin, wasting CPU. The `shutting_down` flag is set under the mutex and broadcast to both condition variables so threads wake up and drain cleanly on shutdown.
+
+### 4. Memory Management (Kernel Module)
+
+The kernel module (`monitor.c`) maintains a linked list of `monitored_entry` nodes, one per registered container. Each node stores the PID, container ID, soft limit, hard limit, and a `soft_warned` flag.
+
+A kernel timer fires every second and iterates the list:
+
+- If `get_rss_bytes()` returns -1, the process has exited and the entry is removed.
+- If RSS exceeds the hard limit, `SIGKILL` is sent and the entry is removed.
+- If RSS exceeds the soft limit for the first time, a `printk(KERN_WARNING)` is emitted and `soft_warned` is set to prevent repeated warnings.
+
+**Mutex vs spinlock choice:** A `mutex` was chosen over a `spinlock` because the timer callback and ioctl handler can both sleep (memory allocation in ioctl, list iteration in timer). Spinlocks cannot be held across sleepable operations, making mutex the correct choice here.
+
+On `rmmod`, `module_exit()` calls `del_timer_sync()` to stop the timer, then iterates the list under the mutex to free all remaining entries, preventing kernel memory leaks.
+
+### 5. Scheduling
+
+Linux uses the Completely Fair Scheduler (CFS), which assigns CPU time proportional to each task's weight. Weight is derived from the `nice` value: lower nice = higher weight = more CPU time.
+
+#### Experiment A — Priority Comparison
+
+| Container | nice value | Wall time |
+|-----------|-----------|-----------|
+| high_prio | 0 | 9.14s |
+| low_prio | 19 | 9.99s |
+
+The high-priority container finished ~0.85 seconds faster. CFS gave it a larger share of CPU time due to its higher weight. The difference is modest because the machine was not heavily loaded; under contention the gap would be larger.
+
+#### Experiment B — CPU-bound vs I/O-bound
+
+| Container | Workload | Wall time |
+|-----------|----------|-----------|
+| cpu_task | CPU-bound (cpu_hog) | 9.99s |
+| io_task | I/O-bound (io_pulse) | 14.11s |
+
+The I/O-bound container took longer because it repeatedly blocked waiting for disk I/O, accumulating less CPU time. CFS does not starve I/O-bound tasks — it actually gives them a small bonus when they wake up from I/O, but the inherent blocking nature of I/O work means wall time is longer. The CPU-bound task ran continuously without blocking and completed sooner.
+
+---
+
+## Design Decisions and Tradeoffs
+
+| Subsystem | Decision | Tradeoff |
+|-----------|----------|----------|
+| Namespace isolation | `chroot` over `pivot_root` | Simpler implementation; `pivot_root` is more secure but requires more setup |
+| Control IPC | UNIX domain socket | More flexible than FIFO; supports bidirectional communication per connection |
+| Buffer sync | mutex + condvar | More explicit than semaphores; slightly more verbose but clearer semantics |
+| Kernel lock | mutex | Safe for sleepable paths; spinlock would be faster but cannot sleep |
+| Log routing | per-container log files | Simple and persistent; a single multiplexed log would be harder to query per container |
+| Architecture | aarch64 Alpine rootfs | Required to match host CPU; x86-64 rootfs causes `Exec format error` on aarch64 host |
