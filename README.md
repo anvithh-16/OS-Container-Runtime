@@ -4,8 +4,8 @@
 
 | Name | SRN |
 |------|-----|
-| Anvith Vegi | [Your SRN] |
-| [Partner Name] | [Partner SRN] |
+| Anvith Vegi | PES1UG24AM047 |
+| Anirudh N | PES1UG24AM041 |
 
 ---
 
